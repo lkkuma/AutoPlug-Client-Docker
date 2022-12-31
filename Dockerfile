@@ -100,7 +100,7 @@ ENV AP_CLIENT_DOWNLOAD  "https://github.com/Osiris-Team/AutoPlug-Releases/raw/ma
 ENV AP_PLUGIN_DOWNLOAD  "https://api.spiget.org/v2/resources/95568/versions/latest/download"
 
 # Install needed packages before clearing the cache
-RUN apt-get update && apt-get install -y --no-install-recommends curl\
+RUN apt-get update && apt-get install -y --no-install-recommends curl=latest\
     && rm -rf /var/lib/apt/lists/*
 
 # Create base directories
@@ -110,48 +110,62 @@ RUN mkdir autoplug mods plugins
 # Download latest AutoPlug-Client
 RUN curl -# -o AutoPlug-Client.jar ${AP_CLIENT_DOWNLOAD}
 
-# Download latest AutoPlug-Plugin
-RUN (cd ./plugins && curl -# -o AutoPlug-Plugin.jar ${AP_PLUGIN_DOWNLOAD})
-
 # Create container entrypoint
 RUN touch entrypoint.sh
-RUN print '#!/bin/bash\n\
-\$JAVA_HOME/bin/java -jar /autoplug/AutoPlug-Client.jar\
-' > entrypoint.sh
+RUN printf "#!/bin/bash\n\
+    \$JAVA_HOME/bin/java -jar /autoplug/AutoPlug-Client.jar\
+" > entrypoint.sh
+
+# Download latest AutoPlug-Plugin
+WORKDIR /autoplug/plugins
+RUN curl -# -o AutoPlug-Plugin.jar ${AP_PLUGIN_DOWNLOAD}
 
 # Parse all arguments into "general.yml" and "updater.yml" configs
 WORKDIR /autoplug/autoplug
 RUN touch general.yml updater.yml
-RUN printf '\
+RUN printf "\
 general: \n\
   autoplug: \n\
-    target-software: ${TARGET_SOFTWARE}\n\
-    start-on-boot: ${START_ON_BOOT}\n\
+    target-software: %s\n\
+    start-on-boot: %s\n\
     system-tray: \n\
       enable: false \n\
   server: \n\
-    start-command: ${START_COMMAND}\n\
-    key: ${AP_WEB_KEY}\n\
-' > general.yml
+    start-command: %s\n\
+    key: %s\n"\
+"${TARGET_SOFTWARE}" \
+"${START_ON_BOOT}" \
+"${START_COMMAND}" \
+"${AP_WEB_KEY}" > general.yml
 
-RUN printf '\
+RUN printf "\
 updater: \n\
   java-updater: \n\
-    enable: ${AP_JAVA_UPDATER_ENABLED}\n\
-    profile: ${AP_JAVA_UPDATER_PROFILE}\n\
-    version: ${AP_JAVA_VERSION}\n\
+    enable: %s\n\
+    profile: %s\n\
+    version: %s\n\
   server-updater: \n\
-    enable: ${SERVER_UPDATER_ENABLED}\n\
-    profile: ${SERVER_UPDATER_PROFILE}\n\
-    software: ${SERVER_SOFTWARE}\n\
-    version: ${SERVER_VERSION}\n\
+    enable: %s\n\
+    profile: %s\n\
+    software: %s\n\
+    version: %s\n\
   plugins-updater: \n\
-    enable: ${PLUGINS_UPDATER_ENABLED}\n\
-    profile: ${PLUGINS_UPDATER_PROFILE}\n\
+    enable: %s\n\
+    profile: %s\n\
   mods-updater: \n\
-    enable: ${MODS_UPDATER_ENABLED}\n\
-    profile: ${MODS_UPDATER_PROFILE}\n\
-' > updater.yml
+    enable: %s\n\
+    profile: %s\n"\
+"${AP_JAVA_UPDATER_ENABLED}" \
+"${AP_JAVA_UPDATER_PROFILE}" \
+"${AP_JAVA_VERSION}" \
+"${SERVER_UPDATER_ENABLED}" \
+"${SERVER_UPDATER_PROFILE}" \
+"${SERVER_SOFTWARE}" \
+"${SERVER_VERSION}" \
+"${PLUGINS_UPDATER_ENABLED}" \
+"${PLUGINS_UPDATER_PROFILE}" \
+"${MODS_UPDATER_ENABLED}" \
+"${MODS_UPDATER_PROFILE}"  > updater.yml
 
 
 ###         < == RUNTIME == >
@@ -165,7 +179,7 @@ COPY --from=final /autoplug /autoplug
 WORKDIR /autoplug
 
 # Install needed packages before clearing the cache
-RUN apt-get update && apt-get install -y --no-install-recommends tini\
+RUN apt-get update && apt-get install -y --no-install-recommends tini=latest\
     && rm -rf /var/lib/apt/lists/*
 
 # RUN groupadd -r autoplug && useradd --no-log-init -r -g autoplug autoplug

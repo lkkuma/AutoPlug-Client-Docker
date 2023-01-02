@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: AP-Client-Docker-waterfall
 
 on:
   push:
@@ -15,8 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . \
-        --file Dockerfile \
-        --tag autoplug-client:waterfall_$(date +%s) \
-        --build-arg PROXY_SERVER=1 \
-        --build-arg SERVER_SOFTWARE=waterfall
+      run: docker build . --file Dockerfile --tag autoplug-client:waterfall_$(date +%s) --build-arg PROXY_SERVER=1 --build-arg SERVER_SOFTWARE=waterfall

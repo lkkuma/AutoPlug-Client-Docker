@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: AP-Client-Docker-pufferfish
 
 on:
   push:
@@ -15,8 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . \
-        --file Dockerfile \
-        --tag autoplug-client:pufferfish_$(date +%s) \
-        --build-arg PROXY_SERVER=1 \
-        --build-arg SERVER_SOFTWARE=pufferfish
+      run: docker build . --file Dockerfile --tag autoplug-client:pufferfish_$(date +%s) --build-arg PROXY_SERVER=1 --build-arg SERVER_SOFTWARE=pufferfish

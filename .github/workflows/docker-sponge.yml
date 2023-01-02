@@ -1,4 +1,4 @@
-name: Docker Image CI
+name: AP-Client-Docker-sponge
 
 on:
   push:
@@ -15,7 +15,4 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Build the Docker image
-      run: docker build . \
-        --file Dockerfile \
-        --tag autoplug-client:sponge_$(date +%s) \
-        --build-arg SERVER_SOFTWARE=sponge
+      run: docker build . --file Dockerfile --tag autoplug-client:sponge_$(date +%s) --build-arg SERVER_SOFTWARE=sponge

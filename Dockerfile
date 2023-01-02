@@ -1,16 +1,21 @@
 # Set global arguments with defaults
-ARG AP_JAVA_VERSION="17"
-ARG XMS="4G"
-ARG XMX="4G"
+ARG JAVA_VERSION="17"
 ARG PROXY_SERVER="0"
 
+###         < == BUILD == >
+# From Eclipse Adoptium Temurin JRE
+FROM eclipse-temurin:${JAVA_VERSION}-jre as build-0
+
 # Set global arguments
+ARG XMS
+ARG XMX
+ARG PROXY_SERVER
+ARG DEBUG
+
 ARG TARGET_SOFTWARE
 ARG START_COMMAND
 ARG AP_WEB_KEY
 
-ARG AP_JAVA_UPDATER_ENABLED
-ARG AP_JAVA_UPDATER_PROFILE
 ARG SERVER_UPDATER_ENABLED
 ARG SERVER_UPDATER_PROFILE
 ARG SERVER_SOFTWARE
@@ -20,15 +25,13 @@ ARG PLUGINS_UPDATER_PROFILE
 ARG MODS_UPDATER_ENABLED
 ARG MODS_UPDATER_PROFILE
 
-
-###         < == BUILD == >
-# From Eclipse Adoptium Temurin JRE
-FROM eclipse-temurin:${AP_JAVA_VERSION}-jre as build-0
+# Set default global arguments
+ENV XMS             ${XMS:-"4G"}
+ENV XMX             ${XMX:-"4G"}
+ENV PROXY_SERVER    ${PROXY_SERVER:-"0"}
+ENV DEBUG           ${DEBUG:+"1"}
 
 # Set default updater arguments
-ENV AP_JAVA_UPDATER_ENABLED ${AP_JAVA_UPDATER_ENABLED:-"true"}
-ENV AP_JAVA_UPDATER_PROFILE ${AP_JAVA_UPDATER_PROFILE:-"AUTOMATIC"}
-ENV AP_JAVA_VERSION         ${AP_JAVA_VERSION:-${AP_JAVA_VERSION}} 
 ENV SERVER_UPDATER_ENABLED  ${SERVER_UPDATER_ENABLED:-"true"}
 ENV SERVER_UPDATER_PROFILE  ${SERVER_UPDATER_PROFILE:-"AUTOMATIC"}
 ENV SERVER_SOFTWARE         ${SERVER_SOFTWARE:-"paper"}
@@ -41,8 +44,8 @@ ENV MODS_UPDATER_PROFILE    ${MODS_UPDATER_PROFILE:-"AUTOMATIC"}
 # Set default general arguments
 ENV TARGET_SOFTWARE ${TARGET_SOFTWARE:-"MINECRAFT_SERVER"}
 ENV START_COMMAND   "java \
--Xms${XMS:-"4G"} \
--Xmx${XMX:-"4G"} \
+-Xms${XMS} \
+-Xmx${XMX} \
 --add-modules=jdk.incubator.vector \
 -XX:+UseG1GC \
 -XX:+ParallelRefProcEnabled \
@@ -67,38 +70,33 @@ ENV START_COMMAND   "java \
 -jar ${SERVER_SOFTWARE}-latest.jar --nogui"
 ENV AP_WEB_KEY      ${AP_WEB_KEY:-"NO_KEY"}
 
-# Set alternate general arguments if PROXY_SERVER is 1 (Waterfall) or 2 (Velocity)
+### Set alternate start command if PROXY_SERVER is 1 (Bungeecord/Waterfall/Travertine/Velocity)
 FROM build-0 as build-1
-ENV SERVER_SOFTWARE ${SERVER_SOFTWARE:-"waterfall"}
+RUN printf "PROXY_SERVER is set to [%s]" "${PROXY_SERVER}"
+ENV SERVER_VERSION  "latest"
 ENV START_COMMAND   "java \
-    -Xms${XMS:-"4G"} \
-    -Xmx${XMX:-"4G"} \
-    -XX:+UseG1GC \
-    -XX:G1HeapRegionSize=4M \
-    -XX:+UnlockExperimentalVMOptions \
-    -XX:+ParallelRefProcEnabled \
-    -XX:+AlwaysPreTouch \
-    -XX:MaxInlineLevel=15 \
-    -jar ${SERVER_SOFTWARE}-latest.jar --nogui"
+-Xms${XMS} \
+-Xmx${XMX} \
+-XX:+UseG1GC \
+-XX:G1HeapRegionSize=4M \
+-XX:+UnlockExperimentalVMOptions \
+-XX:+ParallelRefProcEnabled \
+-XX:+AlwaysPreTouch \
+-XX:MaxInlineLevel=15 \
+-jar ${SERVER_SOFTWARE}-latest.jar --nogui"
 
-FROM build-1 as build-2
-ENV SERVER_SOFTWARE ${SERVER_SOFTWARE:-"velocity"}
+### Set final build
+FROM build-${PROXY_SERVER} as build-final
 
-# Set final build
-FROM build-${PROXY_SERVER:-0} as final
-ENV SERVER_SOFTWARE ${SERVER_SOFTWARE:-"paper"}
-ENV SERVER_VERSION  ${SERVER_VERSION:-"1.19.3"}
-
-### Set AutoPlug Client download values
+# Set AutoPlug Client download values
 ENV AP_CLIENT_BUILD     "stable"
 ENV AP_CLIENT_DOWNLOAD  "https://github.com/Osiris-Team/AutoPlug-Releases/raw/master/${AP_CLIENT_BUILD}-builds/AutoPlug-Client.jar"
 
-### Set AutoPlug Plugin download values
+# Set AutoPlug Plugin download values
 ENV AP_PLUGIN_DOWNLOAD  "https://api.spiget.org/v2/resources/95568/versions/latest/download"
 
-# Install needed packages before clearing the cache
-RUN apt-get update && apt-get install -y --no-install-recommends curl=\*\
-    && rm -rf /var/lib/apt/lists/*
+# Install needed packages
+RUN apt-get update && apt-get install -y --no-install-recommends curl=\*
 
 # Create base directories
 WORKDIR /autoplug
@@ -110,7 +108,7 @@ RUN curl -# -L -o AutoPlug-Client.jar ${AP_CLIENT_DOWNLOAD}
 # Create container entrypoint
 RUN touch entrypoint.sh
 RUN printf "#!/bin/bash\n\
-    \$JAVA_HOME/bin/java -jar /autoplug/AutoPlug-Client.jar" > entrypoint.sh
+    \$JAVA_HOME/bin/java -jar /autoplug/AutoPlug-Client.jar --nojline" > entrypoint.sh
 RUN chmod +x entrypoint.sh
 
 # Download latest AutoPlug-Plugin
@@ -120,66 +118,75 @@ RUN curl -# -L -o AutoPlug-Plugin.jar ${AP_PLUGIN_DOWNLOAD}
 # Parse all arguments into "general.yml" and "updater.yml" configs
 WORKDIR /autoplug/autoplug
 RUN touch general.yml updater.yml
-RUN printf "\
+
+ENV GENERAL_CONFIG "\
 general: \n\
   autoplug: \n\
-    target-software: %s\n\
+    target-software: ${TARGET_SOFTWARE}\n\
     start-on-boot: false\n\
     system-tray: \n\
       enable: false \n\
   server: \n\
-    start-command: %s\n\
-    key: %s\n" \
-"${TARGET_SOFTWARE}" \
-"${START_COMMAND}" \
-"${AP_WEB_KEY}" > general.yml
-
-RUN printf "\
+    start-command: ${START_COMMAND}\n\
+    key: ${AP_WEB_KEY}\n"
+ENV UPDATER_CONFIG "\
 updater: \n\
   java-updater: \n\
-    enable: %s\n\
-    profile: %s\n\
-    version: %s\n\
+    enable: false\n\
+    profile: AUTOMATIC\n\
+    version: 0\n\
   server-updater: \n\
-    enable: %s\n\
-    profile: %s\n\
-    software: %s\n\
-    version: %s\n\
+    enable: ${SERVER_UPDATER_ENABLED}\n\
+    profile: ${SERVER_UPDATER_PROFILE}\n\
+    software: ${SERVER_SOFTWARE}\n\
+    version: ${SERVER_VERSION}\n\
   plugins-updater: \n\
-    enable: %s\n\
-    profile: %s\n\
+    enable: ${PLUGINS_UPDATER_ENABLED}\n\
+    profile: ${PLUGINS_UPDATER_PROFILE}\n\
   mods-updater: \n\
-    enable: %s\n\
-    profile: %s\n" \
-"${AP_JAVA_UPDATER_ENABLED}" \
-"${AP_JAVA_UPDATER_PROFILE}" \
-"${AP_JAVA_VERSION}" \
-"${SERVER_UPDATER_ENABLED}" \
-"${SERVER_UPDATER_PROFILE}" \
-"${SERVER_SOFTWARE}" \
-"${SERVER_VERSION}" \
-"${PLUGINS_UPDATER_ENABLED}" \
-"${PLUGINS_UPDATER_PROFILE}" \
-"${MODS_UPDATER_ENABLED}" \
-"${MODS_UPDATER_PROFILE}"  > updater.yml
+    enable: ${MODS_UPDATER_ENABLED}\n\
+    profile: ${MODS_UPDATER_PROFILE}\n"
 
+RUN printf "%b" "${GENERAL_CONFIG}" > general.yml
+RUN printf "%b" "${UPDATER_CONFIG}" > updater.yml
+
+# Run debug operations if DEBUG is not null
+RUN if [ -n "${DEBUG}" ]; then \
+printf "DEBUG IS ENABLED: [%s]\n\
+ \n\
+## General Config:\n\
+%b\n\
+ \n\
+## Updater Config:\n\
+%b\n\
+" \
+"${DEBUG}" \
+"${GENERAL_CONFIG}" \
+"${UPDATER_CONFIG}" \
+; fi 
 
 ###         < == RUNTIME == >
 # From Eclipse Adoptium Temurin JRE
-FROM eclipse-temurin:${AP_JAVA_VERSION}-jre as runtime
+FROM eclipse-temurin:${JAVA_VERSION}-jre as runtime
 
 # Copy everything from final build
-COPY --from=final /autoplug /autoplug
+COPY --from=build-final /autoplug /autoplug
 
 # Set and mount working directory
 WORKDIR /autoplug
 VOLUME /autoplug
 
 # Install needed packages before clearing the cache
-RUN apt-get update && apt-get install -y --no-install-recommends tini=\*\
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    tini=\*\
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# RUN groupadd -r autoplug && useradd --no-log-init -r -g autoplug autoplug
+# Create and set autoplug user and group
+RUN groupadd -r -g 10000 autoplug \
+    && useradd --no-log-init -r -u 10000 -g autoplug autoplug
+RUN chown -R 10000:10001 /autoplug
+
+USER 10000:10001
 
 # Expose default Minecraft port to host
 EXPOSE 25565/tcp

@@ -17,4 +17,5 @@ jobs:
     - name: Build the Docker image
       run: docker build . \
         --file Dockerfile \
-        --tag autoplug-client:paper_$(date +%s)
+        --tag autoplug-client:sponge_$(date +%s) \
+        --build-arg SERVER_SOFTWARE=sponge

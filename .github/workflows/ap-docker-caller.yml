@@ -1,0 +1,38 @@
+name: Docker Build Workflow Caller
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  plugin-workflows:
+    name: Plugin Servers
+    strategy:
+      matrix:
+        servers: ['mirai','paper','patina','pearl','pufferfish','purpur','spigot','sponge','windspigot']
+    uses: ./.github/workflows/ap-docker-workflow.yml
+    with:
+      server: ${{ matrix.servers }}
+      proxy: false
+
+  mod-workflows:
+    name: Mod Servers
+    strategy:
+      matrix:
+        servers: ['fabric']
+    uses: ./.github/workflows/ap-docker-workflow.yml
+    with:
+      server: ${{ matrix.servers }}
+      proxy: false
+
+  proxy-workflows:
+    name: Proxy Servers
+    strategy:
+      matrix:
+        servers: ['bungeecord','travertine','velocity','waterfall']
+    uses: ./.github/workflows/ap-docker-workflow.yml
+    with:
+      server: ${{ matrix.servers }}
+      proxy: true

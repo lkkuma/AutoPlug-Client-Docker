@@ -1,0 +1,33 @@
+name: Docker Build Workflow Runner
+
+on:
+  workflow_call:
+    inputs:
+      server:
+        required: true
+        type: string
+      proxy:
+        required: true
+        type: boolean
+
+jobs:
+  build-server:
+    name: Build ${{ inputs.server }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Building ${{ inputs.server }} as a non-proxy server
+      if: ${{ inputs.proxy == 'false' }}
+      run: >
+        docker build .
+        --file Dockerfile
+        --tag autoplug-client:${{ inputs.server }}_$(date +%s)
+        --build-arg SERVER_SOFTWARE=${{ inputs.server }}
+    - name: Building ${{ inputs.server }} as a proxy server
+      if: ${{ inputs.proxy == 'true' }}
+      run: >
+        docker build .
+        --file Dockerfile
+        --tag autoplug-client:${{ inputs.server }}_$(date +%s)
+        --build-arg SERVER_SOFTWARE=${{ inputs.server }}
+        --build-arg PROXY_SERVER=1

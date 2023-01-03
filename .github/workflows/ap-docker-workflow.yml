@@ -12,19 +12,18 @@ on:
 
 jobs:
   build-server:
-    name: Build ${{ inputs.server }}
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - name: Building ${{ inputs.server }} as a non-proxy server
-      if: ${{ inputs.proxy == 'false' }}
+    - name: Build ${{ inputs.server }} as a non-proxy server
+      if: ${{ ! inputs.proxy }}
       run: >
         docker build .
         --file Dockerfile
         --tag autoplug-client:${{ inputs.server }}_$(date +%s)
         --build-arg SERVER_SOFTWARE=${{ inputs.server }}
     - name: Building ${{ inputs.server }} as a proxy server
-      if: ${{ inputs.proxy == 'true' }}
+      if: ${{ inputs.proxy }}
       run: >
         docker build .
         --file Dockerfile

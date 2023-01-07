@@ -9,24 +9,63 @@ on:
       proxy:
         required: true
         type: boolean
+      push:
+        required: false
+        type: boolean
+
 
 jobs:
-  build-server:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Build ${{ inputs.server }} as a non-proxy server
+    -
+      name: Checkout
+      uses: actions/checkout@v3
+    -
+      name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+    -
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+    -
+      name: Build default Paper server and push to Docker Hubs
+      if: ${{ inputs.server == 'default' }}
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./Dockerfile
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:paper
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:paper_$(date +%s)
+    -
+      name: Build ${{ inputs.server }} as default non-proxy server and push to Docker Hubs
       if: ${{ ! inputs.proxy }}
-      run: >
-        docker build .
-        --file Dockerfile
-        --tag autoplug-client:${{ inputs.server }}_$(date +%s)
-        --build-arg SERVER_SOFTWARE=${{ inputs.server }}
-    - name: Building ${{ inputs.server }} as a proxy server
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./Dockerfile
+        build-args: |
+          SERVER_SOFTWARE=${{ inputs.server }}
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_$(date +%s)
+    -
+      name: Building ${{ inputs.server }} as a proxy server and push to Docker Hubs
       if: ${{ inputs.proxy }}
-      run: >
-        docker build .
-        --file Dockerfile
-        --tag autoplug-client:${{ inputs.server }}_$(date +%s)
-        --build-arg SERVER_SOFTWARE=${{ inputs.server }}
-        --build-arg PROXY_SERVER=1
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./Dockerfile
+        build-args: |
+          SERVER_SOFTWARE=${{ inputs.server }}
+          PROXY_SERVER=1
+        push: true
+        tags: |
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_$(date +%s)

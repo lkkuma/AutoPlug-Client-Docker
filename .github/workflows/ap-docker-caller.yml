@@ -7,15 +7,24 @@ on:
     branches: [ "main" ]
 
 jobs:
+  default-workflow:
+    name: Default Server
+    uses: ./.github/workflows/ap-docker-workflow.yml
+    with:
+      server: 'paper'
+      proxy: false
+    secrets: inherit
+
   plugin-workflows:
     name: Plugin Servers
     strategy:
       matrix:
-        servers: ['mirai','paper','patina','pearl','pufferfish','purpur','spigot','sponge','windspigot']
+        servers: ['mirai','patina','pearl','pufferfish','purpur','spigot','sponge','windspigot']
     uses: ./.github/workflows/ap-docker-workflow.yml
     with:
       server: ${{ matrix.servers }}
       proxy: false
+    secrets: inherit
 
   mod-workflows:
     name: Mod Servers
@@ -26,6 +35,7 @@ jobs:
     with:
       server: ${{ matrix.servers }}
       proxy: false
+    secrets: inherit
 
   proxy-workflows:
     name: Proxy Servers
@@ -36,3 +46,4 @@ jobs:
     with:
       server: ${{ matrix.servers }}
       proxy: true
+    secrets: inherit

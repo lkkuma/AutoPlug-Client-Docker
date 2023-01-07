@@ -7,11 +7,18 @@ on:
     branches: [ "main" ]
 
 jobs:
+  default-workflow:
+    name: Default Server
+    uses: ./.github/workflows/ap-docker-workflow.yml
+    with:
+      server: 'paper'
+      proxy: false
+
   plugin-workflows:
     name: Plugin Servers
     strategy:
       matrix:
-        servers: ['mirai','paper','patina','pearl','pufferfish','purpur','spigot','sponge','windspigot']
+        servers: ['mirai','patina','pearl','pufferfish','purpur','spigot','sponge','windspigot']
     uses: ./.github/workflows/ap-docker-workflow.yml
     with:
       server: ${{ matrix.servers }}

@@ -7,7 +7,7 @@ on:
         required: true
         type: string
       proxy:
-        required: true
+        required: false
         type: boolean
       push:
         required: false
@@ -47,7 +47,7 @@ jobs:
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:paper_${{ env.date }}
     -
       name: Build ${{ inputs.server }} as non-proxy server and push to Docker Hubs
-      if: ${{ ! inputs.proxy }}
+      if: ${{ ! inputs.proxy && inputs.server != 'default' }}
       uses: docker/build-push-action@v3
       with:
         context: .

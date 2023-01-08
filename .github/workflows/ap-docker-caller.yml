@@ -11,7 +11,7 @@ jobs:
     name: Default Server
     uses: ./.github/workflows/ap-docker-workflow.yml
     with:
-      server: 'paper'
+      server: 'default'
       proxy: false
     secrets: inherit
 

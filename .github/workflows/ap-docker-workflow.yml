@@ -59,7 +59,7 @@ jobs:
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_${{ env.date }}
     -
-      name: Building ${{ inputs.server }} as a proxy server and push to Docker Hubs
+      name: Build ${{ inputs.server }} as a proxy server and push to Docker Hubs
       if: ${{ inputs.proxy }}
       uses: docker/build-push-action@v3
       with:

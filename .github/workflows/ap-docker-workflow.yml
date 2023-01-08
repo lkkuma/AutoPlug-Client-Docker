@@ -19,6 +19,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     -
+      name: Set date
+      run: echo "date=$(date +%s)" >> $GITHUB_ENV
+    -
       name: Checkout
       uses: actions/checkout@v3
     -
@@ -41,9 +44,9 @@ jobs:
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:paper
-          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:paper_$(date +%s)
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:paper_${{ env.date }}
     -
-      name: Build ${{ inputs.server }} as default non-proxy server and push to Docker Hubs
+      name: Build ${{ inputs.server }} as non-proxy server and push to Docker Hubs
       if: ${{ ! inputs.proxy }}
       uses: docker/build-push-action@v3
       with:
@@ -54,7 +57,7 @@ jobs:
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
-          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_$(date +%s)
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_${{ env.date }}
     -
       name: Building ${{ inputs.server }} as a proxy server and push to Docker Hubs
       if: ${{ inputs.proxy }}
@@ -68,4 +71,4 @@ jobs:
         push: true
         tags: |
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
-          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_$(date +%s)
+          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_${{ env.date }}

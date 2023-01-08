@@ -4,7 +4,7 @@ ARG PROXY_SERVER="0"
 
 ###         < == BUILD == >
 # From Eclipse Adoptium Temurin JRE
-FROM eclipse-temurin:${JAVA_VERSION}-jre as build-0
+FROM eclipse-temurin:${JAVA_VERSION}-jdk as build-0
 
 # Set global arguments
 ARG XMS
@@ -88,13 +88,6 @@ ENV START_COMMAND   "java \
 ### Set final build
 FROM build-${PROXY_SERVER} as build-final
 
-# Set AutoPlug Client download values
-ENV AP_CLIENT_BUILD     "stable"
-ENV AP_CLIENT_DOWNLOAD  "https://github.com/Osiris-Team/AutoPlug-Releases/raw/master/${AP_CLIENT_BUILD}-builds/AutoPlug-Client.jar"
-
-# Set AutoPlug Plugin download values
-ENV AP_PLUGIN_DOWNLOAD  "https://api.spiget.org/v2/resources/95568/versions/latest/download"
-
 # Install needed packages
 RUN apt-get update && apt-get install -y --no-install-recommends curl=\*
 
@@ -102,22 +95,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl=\*
 WORKDIR /autoplug
 RUN mkdir autoplug mods plugins
 
+# Set AutoPlug Client download values
+ENV AP_CLIENT_BUILD     "stable"
+ENV AP_CLIENT_DOWNLOAD  "https://github.com/Osiris-Team/AutoPlug-Releases/raw/master/${AP_CLIENT_BUILD}-builds/AutoPlug-Client.jar"
+
 # Download latest AutoPlug-Client
-RUN curl -# -L -o AutoPlug-Client.jar ${AP_CLIENT_DOWNLOAD}
+RUN curl -o AutoPlug-Client.jar -L ${AP_CLIENT_DOWNLOAD}
 
-# Create container entrypoint
-RUN touch entrypoint.sh
-RUN printf "#!/bin/bash\n\
-    \$JAVA_HOME/bin/java -jar /autoplug/AutoPlug-Client.jar --nojline" > entrypoint.sh
-RUN chmod +x entrypoint.sh
-
-# Download latest AutoPlug-Plugin
+# Stage AutoPlug-Plugin.jar to download via AutoPlug-Client
 WORKDIR /autoplug/plugins
-RUN curl -# -L -o AutoPlug-Plugin.jar ${AP_PLUGIN_DOWNLOAD}
+ENV AP_PLUGIN_YML "\
+name: AutoPlug-Plugin\n\
+version: 0\n\
+authors: [OsirisTeam]"
+RUN printf "%b" "${AP_PLUGIN_YML}" > plugin.yml
+RUN jar cMf AutoPlug-Plugin.jar plugin.yml && rm plugin.yml
 
-# Parse all arguments into "general.yml" and "updater.yml" configs
+# Parse all arguments into their respective configs configs
 WORKDIR /autoplug/autoplug
-RUN touch general.yml updater.yml
 
 ENV GENERAL_CONFIG "\
 general: \n\
@@ -129,6 +124,8 @@ general: \n\
   server: \n\
     start-command: ${START_COMMAND}\n\
     key: ${AP_WEB_KEY}\n"
+RUN printf "%b" "${GENERAL_CONFIG}" > general.yml
+
 ENV UPDATER_CONFIG "\
 updater: \n\
   java-updater: \n\
@@ -146,24 +143,51 @@ updater: \n\
   mods-updater: \n\
     enable: ${MODS_UPDATER_ENABLED}\n\
     profile: ${MODS_UPDATER_PROFILE}\n"
-
-RUN printf "%b" "${GENERAL_CONFIG}" > general.yml
 RUN printf "%b" "${UPDATER_CONFIG}" > updater.yml
 
+ENV BACKUP_CONFIG "\
+backup: \n\
+  enable: true\n\
+  max-days: 7\n\
+  cool-down: 500\n\
+  include: \n\
+    enable: true\n\
+    list: \n\
+      - ./\n\
+  exclude: \n\
+    enable: true\n\
+    list: \n\
+      - ./autoplug/backups\n\
+      - ./autoplug/downloads\n\
+      - ./autoplug/system\n\
+      - ./autoplug/logs\n\
+      - ./plugins/dynmap\n\
+      - ./plugins/WorldBorder\n"
+RUN printf "%b" "${BACKUP_CONFIG}" > backup.yml
+
 # Run debug operations if DEBUG is not null
+ENV LOGGER_CONFIG "\
+logger: \n\
+  debug: true\n"
+
 RUN if [ -n "${DEBUG}" ]; then \
+printf "%b" "${LOGGER_CONFIG}" > logger.yml; \
 printf "DEBUG IS ENABLED: [%s]\n\
  \n\
-## General Config:\n\
+-- General Config:\n\
 %b\n\
  \n\
-## Updater Config:\n\
+-- Updater Config:\n\
 %b\n\
-" \
+ \n\
+-- Logger Config:\n\
+%b\n\
+ \n" \
 "${DEBUG}" \
 "${GENERAL_CONFIG}" \
 "${UPDATER_CONFIG}" \
-; fi 
+"${LOGGER_CONFIG}"; \
+fi 
 
 ###         < == RUNTIME == >
 # From Eclipse Adoptium Temurin JRE
@@ -193,4 +217,5 @@ EXPOSE 25565/tcp
 EXPOSE 25565/udp
 
 # Set image entrypoint
-ENTRYPOINT ["/usr/bin/tini","--","/autoplug/entrypoint.sh"]
+ENTRYPOINT ["/usr/bin/tini","--"]
+CMD $JAVA_HOME/bin/java -jar /autoplug/AutoPlug-Client.jar

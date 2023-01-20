@@ -207,7 +207,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Create and set autoplug user and group
 RUN groupadd -r -g 10000 autoplug \
-    && useradd --no-log-init -r -u 10000 -g autoplug autoplug
+    && useradd --no-log-init -r -u 10001 -g autoplug autoplug
 RUN chown -R 10000:10001 /autoplug
 
 USER 10000:10001

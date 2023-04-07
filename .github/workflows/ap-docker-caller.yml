@@ -18,6 +18,7 @@ jobs:
 
   plugin-workflows:
     name: Plugin Servers
+    needs: default-workflow
     strategy:
       matrix:
         servers: ['mirai','patina','pearl','pufferfish','purpur','spigot','sponge','windspigot']
@@ -28,6 +29,7 @@ jobs:
 
   mod-workflows:
     name: Mod Servers
+    needs: default-workflow
     strategy:
       matrix:
         servers: ['fabric']
@@ -38,6 +40,7 @@ jobs:
 
   proxy-workflows:
     name: Proxy Servers
+    needs: default-workflow
     strategy:
       matrix:
         servers: ['bungeecord','travertine','velocity','waterfall']

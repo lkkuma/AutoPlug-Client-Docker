@@ -208,9 +208,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create and set autoplug user and group
 RUN groupadd -r -g 10000 autoplug \
     && useradd --no-log-init -r -u 10001 -g autoplug autoplug
-RUN chown -R 10000:10001 /autoplug
+RUN chown -R autoplug:autoplug /autoplug
 
-USER 10000:10001
+USER autoplug:autoplug
 
 # Expose default Minecraft port to host
 EXPOSE 25565/tcp
@@ -218,4 +218,4 @@ EXPOSE 25565/udp
 
 # Set image entrypoint
 ENTRYPOINT ["/usr/bin/tini","--"]
-CMD $JAVA_HOME/bin/java -jar /autoplug/AutoPlug-Client.jar
+CMD ["java","-jar","/autoplug/AutoPlug-Client.jar"]

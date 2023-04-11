@@ -1,5 +1,5 @@
 # Set global arguments with defaults
-ARG JAVA_VERSION="17"
+ARG JAVA_VERSION="20"
 ARG PROXY_SERVER="0"
 
 ###         < == BUILD == >

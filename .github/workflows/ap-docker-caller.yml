@@ -3,10 +3,10 @@ name: Docker Build Workflow Caller
 on:
   push:
     branches: [ "main" ]
-    paths-ignore: '.github/**'
+    paths: 'Dockerfile'
   pull_request:
     branches: [ "main" ]
-    paths-ignore: '.github/**'
+    paths: 'Dockerfile'
 
 jobs:
   default-workflow:

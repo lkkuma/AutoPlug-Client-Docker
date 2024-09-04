@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Set and mount working directory
 WORKDIR /app
-VOLUME /app/autoplug
+VOLUME /app
 
 # Download latest AutoPlug-Client
 ARG AP_CLIENT_DOWNLOAD

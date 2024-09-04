@@ -17,6 +17,7 @@ WORKDIR /app
 RUN mkdir autoplug mods plugins
 
 COPY entrypoint.sh entrypoint.sh
+RUN chmod +x entrypoint.sh
 
 # Install needed packages before clearing the cache
 RUN apt-get update && apt-get install -y --no-install-recommends \

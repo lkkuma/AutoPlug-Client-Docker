@@ -79,6 +79,9 @@ if ! [[ ${PROXY_SERVER} -eq 0 ]] ; then
     -jar ${SERVER_SOFTWARE}-latest.jar --nogui"}
 fi
 
+if [[ -f /app/autoplug/general.yml ]]; then
+echo "general.yml already exists; skipping"
+else
 GENERAL_CONFIG=${GENERAL_CONFIG:="\
 general: \n\
   autoplug: \n\
@@ -90,7 +93,11 @@ general: \n\
     start-command: ${START_COMMAND}\n\
     key: ${AP_WEB_KEY}\n"}
 printf "%b" "${GENERAL_CONFIG}" > /app/autoplug/general.yml
+fi
 
+if [[ -f /app/autoplug/updater.yml ]]; then
+echo "updater.yml already exists; skipping"
+else
 UPDATER_CONFIG=${UPDATER_CONFIG="\
 updater: \n\
   java-updater: \n\
@@ -109,7 +116,11 @@ updater: \n\
     enable: ${MODS_UPDATER_ENABLED}\n\
     profile: ${MODS_UPDATER_PROFILE}\n"}
 printf "%b" "${UPDATER_CONFIG}" > /app/autoplug/updater.yml
+fi
 
+if [[ -f /app/autoplug/backup.yml ]]; then
+echo "backup.yml already exists; skipping"
+else
 BACKUP_CONFIG=${BACKUP_CONFIG="\
 backup: \n\
   enable: ${BACKUP_ENABLED}\n\
@@ -122,10 +133,15 @@ backup: \n\
     enable: ${BACKUP_EXCLUDE_ENABLED}\n\
     list: ${BACKUP_EXCLUDE_LIST}\n"}
 printf "%b" "${BACKUP_CONFIG}" > /app/autoplug/backup.yml
+fi
 
+if [[ -f /app/autoplug/logger.yml ]]; then
+echo "logger.yml already exists; skipping"
+else
 LOGGER_CONFIG=${LOGGER_CONFIG="\
 logger: \n\
   debug: ${DEBUG}\n"}
+fi
 
 if [ -n "${DEBUG:+"true"}" ]; then \
     printf "%b" "${LOGGER_CONFIG}" > /app/autoplug/logger.yml; \

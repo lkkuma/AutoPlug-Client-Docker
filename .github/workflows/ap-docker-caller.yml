@@ -6,6 +6,7 @@ on:
     paths:
       - 'Dockerfile'
       - 'docker-compose.yml'
+      - 'entrypoint.sh'
   pull_request:
     branches: [ "main" ]
     paths:

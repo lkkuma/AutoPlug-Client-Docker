@@ -9,6 +9,9 @@ on:
       proxy:
         required: false
         type: boolean
+      mod:
+        required: false
+        type: boolean
       push:
         required: false
         type: boolean
@@ -17,6 +20,9 @@ on:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    env:
+      date:
+      tag_base: ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
     steps:
     -
       name: Set date
@@ -47,7 +53,7 @@ jobs:
           ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:paper_${{ env.date }}
     -
       name: Build ${{ inputs.server }} as non-proxy server and push to Docker Hubs
-      if: ${{ ! inputs.proxy && inputs.server != 'default' }}
+      if: ${{ ! inputs.proxy && ! inputs.mod && inputs.server != 'default' }}
       uses: docker/build-push-action@v3
       with:
         context: .
@@ -56,8 +62,22 @@ jobs:
           SERVER_SOFTWARE=${{ inputs.server }}
         push: true
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
-          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_${{ env.date }}
+          ${{ env.tag_base }}
+          ${{ env.tag_base }}_${{ env.date }}
+    -
+      name: Build ${{ inputs.server }} as a proxy server and push to Docker Hubs
+      if: ${{ inputs.mod }}
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        file: ./Dockerfile
+        build-args: |
+          SERVER_SOFTWARE=${{ inputs.server }}
+          MOD_SERVER=1
+        push: true
+        tags: |
+          ${{ env.tag_base }}
+          ${{ env.tag_base }}_${{ env.date }}
     -
       name: Build ${{ inputs.server }} as a proxy server and push to Docker Hubs
       if: ${{ inputs.proxy }}
@@ -70,5 +90,5 @@ jobs:
           PROXY_SERVER=1
         push: true
         tags: |
-          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}
-          ${{ secrets.DOCKERHUB_USERNAME }}/autoplug-client:${{ inputs.server }}_${{ env.date }}
+          ${{ env.tag_base }}
+          ${{ env.tag_base }}_${{ env.date }}

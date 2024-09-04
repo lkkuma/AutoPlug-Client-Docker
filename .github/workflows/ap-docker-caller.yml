@@ -3,10 +3,14 @@ name: Docker Build Workflow Caller
 on:
   push:
     branches: [ "main" ]
-    paths: 'Dockerfile'
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
   pull_request:
     branches: [ "main" ]
-    paths: 'Dockerfile'
+    paths:
+      - 'Dockerfile'
+      - 'docker-compose.yml'
 
 jobs:
   default-workflow:
@@ -36,6 +40,7 @@ jobs:
     uses: ./.github/workflows/ap-docker-workflow.yml
     with:
       server: ${{ matrix.servers }}
+      mod: true
     secrets: inherit
 
   proxy-workflows:
